@@ -115,6 +115,6 @@ bun run test
 
 ## Enlaces del despliegue
 
-- **Repositorio (público):** _pendiente_
-- **Frontend en producción:** _pendiente_
-- **Backend en producción:** _pendiente_
+- **Repositorio (público):** https://github.com/pierox-afk/github-profile-viewer
+- **Frontend en producción:** https://frontend-swart-sigma-62.vercel.app
+- **Backend en producción:** https://github-profile-viewer-production-dc52.up.railway.app/api
