@@ -117,4 +117,4 @@ bun run test
 
 - **Repositorio (público):** https://github.com/pierox-afk/github-profile-viewer
 - **Frontend en producción:** https://frontend-swart-sigma-62.vercel.app
-- **Backend en producción:** https://github-profile-viewer-production-dc52.up.railway.app/api
+- **Backend (API):** base `https://github-profile-viewer-production-dc52.up.railway.app/api` — ej: [/api/user/pierox-afk](https://github-profile-viewer-production-dc52.up.railway.app/api/user/pierox-afk)
