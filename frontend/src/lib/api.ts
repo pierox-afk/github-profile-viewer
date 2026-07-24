@@ -1,4 +1,9 @@
-import { UserProfile, UserSuggestion } from '@/types/user';
+import {
+  ContributionCalendar,
+  RepoSummary,
+  UserProfile,
+  UserSuggestion,
+} from '@/types/user';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -70,4 +75,42 @@ export async function searchUsers(
     // network error or aborted request: just show no suggestions
     return [];
   }
+}
+
+async function getJson<T>(path: string, fallback: T): Promise<T> {
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    if (!response.ok) {
+      return fallback;
+    }
+    return (await response.json()) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+export function fetchRepos(username: string): Promise<RepoSummary[]> {
+  return getJson<RepoSummary[]>(
+    `/user/${encodeURIComponent(username)}/repos`,
+    [],
+  );
+}
+
+export function fetchStarred(username: string): Promise<RepoSummary[]> {
+  return getJson<RepoSummary[]>(
+    `/user/${encodeURIComponent(username)}/starred`,
+    [],
+  );
+}
+
+export function fetchContributions(
+  username: string,
+): Promise<ContributionCalendar> {
+  return getJson<ContributionCalendar>(
+    `/user/${encodeURIComponent(username)}/contributions`,
+    { totalContributions: 0, weeks: [] },
+  );
 }

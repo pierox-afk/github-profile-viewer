@@ -152,18 +152,6 @@ export function TopBar({ onSearch }: TopBarProps) {
             </ul>
           )}
         </div>
-
-        <div className="ml-auto hidden items-center gap-3 text-sm text-fg-default md:flex">
-          <span className="cursor-default rounded-md px-2 py-1 hover:text-fg-muted">
-            Pull requests
-          </span>
-          <span className="cursor-default rounded-md px-2 py-1 hover:text-fg-muted">
-            Issues
-          </span>
-          <span className="cursor-default rounded-md px-2 py-1 hover:text-fg-muted">
-            Marketplace
-          </span>
-        </div>
       </div>
     </header>
   );

@@ -1,7 +1,12 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UsernameParamDto } from './dto/username-param.dto';
-import { UserProfile, UserSuggestion } from './user.types';
+import {
+  ContributionCalendar,
+  RepoSummary,
+  UserProfile,
+  UserSuggestion,
+} from './user.types';
 
 @Controller('user')
 export class UserController {
@@ -15,5 +20,22 @@ export class UserController {
   @Get(':username')
   getUser(@Param() params: UsernameParamDto): Promise<UserProfile> {
     return this.userService.getProfile(params.username);
+  }
+
+  @Get(':username/repos')
+  getRepos(@Param() params: UsernameParamDto): Promise<RepoSummary[]> {
+    return this.userService.getRepos(params.username);
+  }
+
+  @Get(':username/starred')
+  getStarred(@Param() params: UsernameParamDto): Promise<RepoSummary[]> {
+    return this.userService.getStarred(params.username);
+  }
+
+  @Get(':username/contributions')
+  getContributions(
+    @Param() params: UsernameParamDto,
+  ): Promise<ContributionCalendar> {
+    return this.userService.getContributions(params.username);
   }
 }

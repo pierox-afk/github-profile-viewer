@@ -28,3 +28,27 @@ export interface UserSuggestion {
   avatarUrl: string;
   htmlUrl: string;
 }
+
+export interface RepoSummary {
+  id: number;
+  name: string;
+  fullName: string;
+  description: string | null;
+  htmlUrl: string;
+  language: string | null;
+  stars: number;
+  forks: number;
+  updatedAt: string;
+  isFork: boolean;
+}
+
+export interface ContributionDay {
+  date: string;
+  count: number;
+  level: number;
+}
+
+export interface ContributionCalendar {
+  totalContributions: number;
+  weeks: ContributionDay[][];
+}

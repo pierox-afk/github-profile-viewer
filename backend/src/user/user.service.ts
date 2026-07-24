@@ -7,13 +7,26 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  ContributionCalendar,
+  ContributionDay,
   GithubApiUser,
+  GithubRepo,
   GithubSearchResponse,
+  RepoSummary,
   UserProfile,
   UserSuggestion,
 } from './user.types';
 
 const GITHUB_API_BASE = 'https://api.github.com';
+const GITHUB_GRAPHQL = 'https://api.github.com/graphql';
+
+const CONTRIBUTION_LEVELS: Record<string, number> = {
+  NONE: 0,
+  FIRST_QUARTILE: 1,
+  SECOND_QUARTILE: 2,
+  THIRD_QUARTILE: 3,
+  FOURTH_QUARTILE: 4,
+};
 
 @Injectable()
 export class UserService {
@@ -125,5 +138,139 @@ export class UserService {
       avatarUrl: item.avatar_url,
       htmlUrl: item.html_url,
     }));
+  }
+
+  async getRepos(username: string): Promise<RepoSummary[]> {
+    return this.fetchRepoList(
+      `${GITHUB_API_BASE}/users/${encodeURIComponent(username)}/repos?sort=updated&per_page=30&type=owner`,
+      username,
+    );
+  }
+
+  async getStarred(username: string): Promise<RepoSummary[]> {
+    return this.fetchRepoList(
+      `${GITHUB_API_BASE}/users/${encodeURIComponent(username)}/starred?per_page=30`,
+      username,
+    );
+  }
+
+  private async fetchRepoList(
+    url: string,
+    username: string,
+  ): Promise<RepoSummary[]> {
+    let response: Response;
+    try {
+      response = await fetch(url, { headers: this.buildHeaders() });
+    } catch (error) {
+      this.logger.error(`Failed to reach GitHub API: ${String(error)}`);
+      throw new ServiceUnavailableException(
+        'Could not reach the GitHub API. Please try again later.',
+      );
+    }
+
+    if (response.status === 404) {
+      throw new NotFoundException(`GitHub user "${username}" was not found.`);
+    }
+
+    if (!response.ok) {
+      this.logger.warn(`GitHub repos request returned ${response.status}`);
+      return [];
+    }
+
+    const repos = (await response.json()) as GithubRepo[];
+    return repos.map((repo) => ({
+      id: repo.id,
+      name: repo.name,
+      fullName: repo.full_name,
+      description: repo.description,
+      htmlUrl: repo.html_url,
+      language: repo.language,
+      stars: repo.stargazers_count,
+      forks: repo.forks_count,
+      updatedAt: repo.updated_at,
+      isFork: repo.fork,
+    }));
+  }
+
+  async getContributions(username: string): Promise<ContributionCalendar> {
+    const token = this.config.get<string>('GITHUB_TOKEN');
+    // The contributions calendar is only available through the GraphQL API,
+    // which requires authentication. Without a token we degrade gracefully.
+    if (!token) {
+      return { totalContributions: 0, weeks: [] };
+    }
+
+    const query = `
+      query($login: String!) {
+        user(login: $login) {
+          contributionsCollection {
+            contributionCalendar {
+              totalContributions
+              weeks {
+                contributionDays {
+                  date
+                  contributionCount
+                  contributionLevel
+                }
+              }
+            }
+          }
+        }
+      }`;
+
+    let response: Response;
+    try {
+      response = await fetch(GITHUB_GRAPHQL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'github-profile-viewer',
+        },
+        body: JSON.stringify({ query, variables: { login: username } }),
+      });
+    } catch (error) {
+      this.logger.error(`Failed to reach GitHub GraphQL: ${String(error)}`);
+      return { totalContributions: 0, weeks: [] };
+    }
+
+    if (!response.ok) {
+      this.logger.warn(`GitHub GraphQL returned ${response.status}`);
+      return { totalContributions: 0, weeks: [] };
+    }
+
+    const body = (await response.json()) as {
+      data?: {
+        user?: {
+          contributionsCollection: {
+            contributionCalendar: {
+              totalContributions: number;
+              weeks: Array<{
+                contributionDays: Array<{
+                  date: string;
+                  contributionCount: number;
+                  contributionLevel: string;
+                }>;
+              }>;
+            };
+          };
+        } | null;
+      };
+    };
+
+    const calendar = body.data?.user?.contributionsCollection.contributionCalendar;
+    if (!calendar) {
+      return { totalContributions: 0, weeks: [] };
+    }
+
+    const weeks: ContributionDay[][] = calendar.weeks.map((week) =>
+      week.contributionDays.map((day) => ({
+        date: day.date,
+        count: day.contributionCount,
+        level: CONTRIBUTION_LEVELS[day.contributionLevel] ?? 0,
+      })),
+    );
+
+    return { totalContributions: calendar.totalContributions, weeks };
   }
 }

@@ -54,3 +54,41 @@ export interface UserSuggestion {
   avatarUrl: string;
   htmlUrl: string;
 }
+
+export interface ContributionDay {
+  date: string;
+  count: number;
+  level: number; // 0 (none) .. 4 (highest)
+}
+
+export interface ContributionCalendar {
+  totalContributions: number;
+  weeks: ContributionDay[][];
+}
+
+// GitHub GET /users/:username/repos (and /starred) item, only fields we use
+export interface GithubRepo {
+  id: number;
+  name: string;
+  full_name: string;
+  description: string | null;
+  html_url: string;
+  language: string | null;
+  stargazers_count: number;
+  forks_count: number;
+  updated_at: string;
+  fork: boolean;
+}
+
+export interface RepoSummary {
+  id: number;
+  name: string;
+  fullName: string;
+  description: string | null;
+  htmlUrl: string;
+  language: string | null;
+  stars: number;
+  forks: number;
+  updatedAt: string;
+  isFork: boolean;
+}
