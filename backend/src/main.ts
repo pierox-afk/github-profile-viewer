@@ -19,13 +19,16 @@ async function bootstrap() {
 
   const corsOrigin = config.get<string>('CORS_ORIGIN', 'http://localhost:3000');
   app.enableCors({
-    origin: corsOrigin.split(',').map((origin) => origin.trim()),
+    origin:
+      corsOrigin === '*'
+        ? true
+        : corsOrigin.split(',').map((origin) => origin.trim()),
     methods: ['GET'],
   });
 
   const port = config.get<number>('PORT', 3001);
   await app.listen(port);
-  // eslint-disable-next-line no-console
+
   console.log(`Backend running on http://localhost:${port}/api`);
 }
 
