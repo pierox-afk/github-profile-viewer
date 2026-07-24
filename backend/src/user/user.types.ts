@@ -38,3 +38,19 @@ export interface UserProfile {
   createdAt: string;
   updatedAt: string;
 }
+
+// GitHub GET /search/users response (only the fields we use)
+export interface GithubSearchResponse {
+  items: Array<{
+    login: string;
+    id: number;
+    avatar_url: string;
+    html_url: string;
+  }>;
+}
+
+export interface UserSuggestion {
+  login: string;
+  avatarUrl: string;
+  htmlUrl: string;
+}

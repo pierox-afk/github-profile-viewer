@@ -22,3 +22,9 @@ export interface ApiError {
   message: string;
   statusCode: number;
 }
+
+export interface UserSuggestion {
+  login: string;
+  avatarUrl: string;
+  htmlUrl: string;
+}

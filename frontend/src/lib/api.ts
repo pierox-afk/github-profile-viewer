@@ -1,4 +1,4 @@
-import { UserProfile } from '@/types/user';
+import { UserProfile, UserSuggestion } from '@/types/user';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -44,4 +44,30 @@ export async function fetchProfile(username: string): Promise<UserProfile> {
   }
 
   return (await response.json()) as UserProfile;
+}
+
+// Autocomplete suggestions from our backend (GET /user?q=...)
+export async function searchUsers(
+  query: string,
+  signal?: AbortSignal,
+): Promise<UserSuggestion[]> {
+  const q = query.trim();
+  if (!q) {
+    return [];
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/user?q=${encodeURIComponent(q)}`, {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+      signal,
+    });
+    if (!response.ok) {
+      return [];
+    }
+    return (await response.json()) as UserSuggestion[];
+  } catch {
+    // network error or aborted request: just show no suggestions
+    return [];
+  }
 }

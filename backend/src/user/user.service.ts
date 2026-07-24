@@ -6,7 +6,12 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GithubApiUser, UserProfile } from './user.types';
+import {
+  GithubApiUser,
+  GithubSearchResponse,
+  UserProfile,
+  UserSuggestion,
+} from './user.types';
 
 const GITHUB_API_BASE = 'https://api.github.com';
 
@@ -16,9 +21,8 @@ export class UserService {
 
   constructor(private readonly config: ConfigService) {}
 
-  async getProfile(username: string): Promise<UserProfile> {
+  private buildHeaders(): Record<string, string> {
     const token = this.config.get<string>('GITHUB_TOKEN');
-
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
@@ -27,6 +31,11 @@ export class UserService {
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
+    return headers;
+  }
+
+  async getProfile(username: string): Promise<UserProfile> {
+    const headers = this.buildHeaders();
 
     let response: Response;
     try {
@@ -83,5 +92,38 @@ export class UserService {
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };
+  }
+
+  async searchUsers(query: string): Promise<UserSuggestion[]> {
+    const q = query.trim().slice(0, 100);
+    if (!q) {
+      return [];
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(
+        `${GITHUB_API_BASE}/search/users?q=${encodeURIComponent(q)}&per_page=7`,
+        { headers: this.buildHeaders() },
+      );
+    } catch (error) {
+      this.logger.error(`Failed to reach GitHub search API: ${String(error)}`);
+      throw new ServiceUnavailableException(
+        'Could not reach the GitHub API. Please try again later.',
+      );
+    }
+
+    if (!response.ok) {
+      // Search has a stricter rate limit; degrade gracefully to no suggestions
+      this.logger.warn(`GitHub search returned ${response.status}`);
+      return [];
+    }
+
+    const data = (await response.json()) as GithubSearchResponse;
+    return data.items.map((item) => ({
+      login: item.login,
+      avatarUrl: item.avatar_url,
+      htmlUrl: item.html_url,
+    }));
   }
 }
